@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>MCP Server Simulation</title>
+     <script defer src="controller.js"></script>
+    <style>
+        :root {
+            /* Helle Farben (Standard) */
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --input-bg: #ffffff;
+            --input-border: #ccc;
+            --messages-bg: #f0f0f0;
+            --button-bg: #007bff;
+            --button-text: #ffffff;
+            --label-color: #333;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Dunkle Farben */
+                --bg-color: #121212;
+                --text-color: #e0e0e0;
+                --input-bg: #1e1e1e;
+                --input-border: #555;
+                --messages-bg: #2d2d2d;
+                --button-bg: #0056b3;
+                --button-text: #ffffff;
+                --label-color: #bbbbbb;
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        label {
+            display: inline-block;
+            width: 180px;
+            margin-top: 10px;
+            color: var(--label-color);
+        }
+
+        .label-with-button {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: inherit;
+        }
+
+        .label-with-button button {
+            font-size: 12px;
+            padding: 2px 6px;
+            min-width: 24px;
+            height: auto;
+        }
+
+        #btnAddProperty:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        label {
+            white-space: nowrap;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 300px;
+            padding: 5px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+        }
+
+        textarea.readonly {
+            background-color: var(--messages-bg);
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        button {
+            margin: 10px 5px;
+            padding: 8px 16px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .row:has(> button) {
+            align-items: stretch;
+        }
+
+        .row:has(> button) button {
+            align-self: stretch;
+            height: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .messages {
+            background-color: var(--messages-bg);
+            color: var(--text-color);
+            font-family: monospace;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            height: 95vh;
+        }
+
+        .left-panel {
+            flex: 0 0 auto;
+            min-width: 300px;
+            width: fit-content;
+            max-width: 500px;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+        }
+
+        #llm-ui-container {
+            display: none;
+            flex: 1;
+        }
+
+        #llm-ui-container h2 {
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        #llm-ui-frame {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+  <div class="left-panel">
+    <h1>MCP Server Simulation</h1>
+
+    <div class="row">
+        <label for="userName">User Name</label>
+        <input type="text" id="userName" name="userName" placeholder="Your real name or nick name." title="Your real name or nick name.">
+    </div>
+    
+    <div class="row">
+        <label for="toolTitle">Tool Title</label>
+        <input type="text" id="toolTitle" name="toolTitle" value="Weather Forecast">
+    </div>
+    
+    <div class="row">
+        <label for="toolDescription">Tool Description</label>
+        <textarea id="toolDescription" name="toolDescription" rows="3">This tool determines the weather at a given place.Weather forecast</textarea>
+    </div>
+
+    <div class="row">
+        <label for="propertyName" class="label-with-button">
+            Property Name
+            <button type="button" id="btnAddProperty">[+]</button>
+        </label>
+        <input type="text" id="propertyName" name="propertyName" value="Place">
+    </div>
+
+    <div class="row">
+        <label for="propertyDescription">Property Description</label>
+        <textarea id="propertyDescription" name="propertyDescription" rows="3">Name of the place where the weather is</textarea>
+    </div>
+
+    <div class="row" id="property2Section" style="display: none;">
+        <label for="property2Name" class="label-with-button">
+            Property 2 Name
+            <button type="button" id="btnRemoveProperty">[-]</button>
+        </label>
+        <input type="text" id="property2Name" name="property2Name" placeholder="e.g. Date">
+    </div>
+
+    <div class="row" id="property2DescriptionRow" style="display: none;">
+        <label for="property2Description">Property 2 Description</label>
+        <textarea id="property2Description" name="property2Description" rows="3" placeholder="e.g. The date for the weather forecast"></textarea>
+    </div>
+
+    <div class="row">
+        <label for="toolRequest">Tool Request</label>
+        <textarea id="toolRequest" name="toolRequest" rows="3" readonly></textarea>
+    </div>
+
+    <div class="row">
+        <label for="propertyValue">Response (Property Value)</label>
+        <textarea id="propertyValue" name="propertyValue" rows="5"></textarea>
+    </div>
+
+    <div class="row">
+        <button id="btnStartMcp">Start/Update MCP Server</button>
+        <button id="btnSendResponse">Send Response</button>
+    </div>
+
+    <div class="row">
+        <button id="btnPreset1">Preset 1</button>
+        <button id="btnPreset2">Preset 2</button>
+        <button id="btnPreset3">Preset 3</button>
+    </div>
+
+    <div class="row">
+        <label for="messages">Messages</label>
+        <textarea id="messages" name="messages" rows="5" readonly class="messages"></textarea>
+    </div>
+
+     </div>
+     <div class="right-panel">
+        <div id="llm-ui-container" style="display: none; flex: 1;">
+            <iframe id="llm-ui-frame" title="LLM Interface"></iframe>
+        </div>
+     </div>
+</div>
+
+</body>
+</html>
