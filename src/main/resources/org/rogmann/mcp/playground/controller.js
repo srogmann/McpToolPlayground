@@ -119,9 +119,14 @@ function handleMessage(message) {
             else if (data.action === 'uiServerStarted') {
                 const uiUrl = data.url;
                 const iframe = $('#llm-ui-frame');
+                const helpSection = $('#help-section');
+
                 iframe.src = uiUrl;
-                $('#llm-ui-container').style.display = 'block';
-                addMessage(`LLM UI bereit unter: ${uiUrl}`);
+                $('#llm-ui-container').style.display = 'block';  // Show iframe container
+                if (helpSection) {
+                    helpSection.style.display = 'none';          // Hide help
+                }
+                addMessage(`LLM UI ready at: ${uiUrl}`);
             }
         }
     } catch (e) {

@@ -292,11 +292,35 @@
     </div>
 
      </div>
-     <div class="right-panel">
-        <div id="llm-ui-container" style="display: none; flex: 1;">
-            <iframe id="llm-ui-frame" title="LLM Interface"></iframe>
-        </div>
-     </div>
+<div class="right-panel">
+    <!-- Help/Intro Section -->
+    <div id="help-section" style="flex: 1; padding: 20px; background-color: var(--messages-bg); border-radius: 8px; overflow-y: auto;">
+        <h2>How to Use This MCP Simulation</h2>
+        <p>Welcome! This tool lets you simulate a <strong>Model Context Protocol (MCP)</strong> server.</p>
+
+        <h3>Step-by-Step Guide</h3>
+        <ol>
+            <li><strong>Enter Your Name</strong>: Filled by the server.</li>
+            <li><strong>Define a Tool</strong>: Give it a title and description (e.g., "get_weather").</li>
+            <li><strong>Define Input Properties</strong>: What inputs does your tool need? (e.g., "Place")</li>
+            <li><strong>Start the MCP Server</strong>: Click the button to launch the simulated LLM interaction.</li>
+            <li><strong>Respond to Tool Calls</strong>: When the LLM sends a request, fill in the value and click "Send Response".</li>
+        </ol>
+
+        <h3>💡 Example Presets</h3>
+        <p>Use the preset buttons to quickly load example tools like weather, currency, or news lookup.</p>
+
+        <h3>🎯 Purpose</h3>
+        <p>This simulation helps you understand how MCP tools interact with LLMs by defining structured function calls.</p>
+
+        <p><em>When you're ready, click <strong>"Start/Update MCP Server"</strong> to begin!</em></p>
+    </div>
+
+    <!-- LLM UI Container (Initially Hidden) -->
+    <div id="llm-ui-container" style="display: none; flex: 1;">
+        <iframe id="llm-ui-frame" title="LLM Interface"></iframe>
+    </div>
+</div>
 </div>
 
 </body>
