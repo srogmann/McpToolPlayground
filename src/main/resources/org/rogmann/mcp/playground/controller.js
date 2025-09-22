@@ -102,7 +102,19 @@ function handleMessage(message) {
                 document.cookie = `MCP_PLAYGROUND_USER_ID=${encodeURIComponent(data.userId)}; Path=/; SameSite=Strict`;
             }
             else if (action === 'toolCall') {
-                $('#toolRequest').value = JSON.stringify(data.toolRequest);
+                const toolRequestTextarea = $('#toolRequest');
+                const wrapper = toolRequestTextarea.parentElement;
+
+                toolRequestTextarea.value = JSON.stringify(data.toolRequest);
+
+                // Remove any existing animation
+                wrapper.classList.remove('animate-pulse');
+
+                // Trigger reflow so we can re-apply the animation
+                void wrapper.offsetWidth;
+
+                // Add animation class
+                wrapper.classList.add('animate-pulse');
             }
             else if (data.action === 'uiServerStarted') {
                 const uiUrl = data.url;
@@ -133,19 +145,19 @@ function initPage() {
     function setPreset(presetNumber) {
         const presets = {
             1: {
-                toolTitle: "Weather Forecast",
+                toolTitle: "get_weather",
                 toolDescription: "This tool determines the weather at a given place. Weather forecast",
                 propertyName: "Place",
                 propertyDescription: "Name of the place where the weather is"
             },
             2: {
-                toolTitle: "Currency Converter",
+                toolTitle: "convert_currency",
                 toolDescription: "Converts currency values between different currencies",
                 propertyName: "Currency",
                 propertyDescription: "The currency to convert from"
             },
             3: {
-                toolTitle: "News Fetcher",
+                toolTitle: "fetch_news",
                 toolDescription: "Fetches latest news articles from various sources",
                 propertyName: "Category",
                 propertyDescription: "The news category to fetch"
@@ -264,6 +276,25 @@ function initPage() {
 
     $('#btnPreset3').addEventListener("click", function(event) {
         setPreset(3);
+    });
+
+    // Reset animation when focusing on propertyValue
+    $('#propertyValue').addEventListener('focus', function () {
+        const wrapper = $('#toolRequest').parentElement;
+        wrapper.classList.remove('animate-pulse');
+    });
+
+    // Reset animation when clicking Send Response
+    $('#btnSendResponse').addEventListener('click', function () {
+        const wrapper = $('#toolRequest').parentElement;
+        wrapper.classList.remove('animate-pulse');
+    });
+
+    $('#propertyValue').addEventListener('input', function () {
+        const wrapper = $('#toolRequest').parentElement;
+        if (this.value.trim().length > 0) {
+            wrapper.classList.remove('animate-pulse');
+        }
     });
 
     wsManager.initWebSocket(function() {

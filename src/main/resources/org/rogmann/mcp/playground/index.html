@@ -172,6 +172,48 @@
             background-color: var(--bg-color);
         }
 
+        .animated-textarea-wrapper {
+            position: relative;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .animated-textarea-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at center,
+                rgba(255, 215, 0, 0.4) 0%,
+                rgba(255, 215, 0, 0) 70%);
+            transform: scale(3);
+            opacity: 0;
+            transition: transform 0.6s ease-out, opacity 0.6s ease-out;
+            z-index: 2;
+        }
+
+        .animated-textarea-wrapper.animate-pulse::after {
+            transform: scale(1);
+            opacity: 1;
+            animation: pulseShrink 1.2s ease-out forwards;
+        }
+
+        @keyframes pulseShrink {
+            0% {
+                transform: scale(3);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -187,7 +229,7 @@
     
     <div class="row">
         <label for="toolTitle">Tool Title</label>
-        <input type="text" id="toolTitle" name="toolTitle" value="Weather Forecast">
+        <input type="text" id="toolTitle" name="toolTitle" value="get_weather">
     </div>
     
     <div class="row">
@@ -223,7 +265,9 @@
 
     <div class="row">
         <label for="toolRequest">Tool Request</label>
-        <textarea id="toolRequest" name="toolRequest" rows="3" readonly></textarea>
+        <div class="animated-textarea-wrapper">
+            <textarea id="toolRequest" name="toolRequest" rows="3" readonly></textarea>
+        </div>
     </div>
 
     <div class="row">
