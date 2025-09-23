@@ -223,18 +223,18 @@
     <h1>MCP Server Simulation</h1>
 
     <div class="row">
-        <label for="userName">User Name</label>
-        <input type="text" id="userName" name="userName" placeholder="Your real name or nick name." title="Your real name or nick name.">
+        <label for="userName">User</label>
+        <input type="text" id="userName" name="userName" title="Generated user-id" readonly="readonly">
     </div>
     
     <div class="row">
         <label for="toolTitle">Tool Title</label>
-        <input type="text" id="toolTitle" name="toolTitle" value="get_weather">
+        <input type="text" id="toolTitle" name="toolTitle" value="">
     </div>
     
     <div class="row">
         <label for="toolDescription">Tool Description</label>
-        <textarea id="toolDescription" name="toolDescription" rows="3">This tool determines the weather at a given place.Weather forecast</textarea>
+        <textarea id="toolDescription" name="toolDescription" rows="3"></textarea>
     </div>
 
     <div class="row">
@@ -242,12 +242,12 @@
             Property Name
             <button type="button" id="btnAddProperty">[+]</button>
         </label>
-        <input type="text" id="propertyName" name="propertyName" value="Place">
+        <input type="text" id="propertyName" name="propertyName" value="">
     </div>
 
     <div class="row">
         <label for="propertyDescription">Property Description</label>
-        <textarea id="propertyDescription" name="propertyDescription" rows="3">Name of the place where the weather is</textarea>
+        <textarea id="propertyDescription" name="propertyDescription" rows="3"></textarea>
     </div>
 
     <div class="row" id="property2Section" style="display: none;">

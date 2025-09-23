@@ -328,6 +328,8 @@ function initPage() {
             $('#btnSendResponse').click();
         }
     });
+
+    setPreset(1);
 }
 
 document.addEventListener('DOMContentLoaded', initPage);
