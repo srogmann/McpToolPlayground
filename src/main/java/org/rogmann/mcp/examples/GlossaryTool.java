@@ -73,7 +73,7 @@ public class GlossaryTool implements McpToolImplementation {
         }
         
         toolDescription = System.getProperty(PROP_DESCRIPTION, "Tool to explain technical words or concepts.");
-        LOG.info("Tool-Description: " + toolDescription);
+        LOG.info("Glossary tool: " + toolDescription);
 
         try (BufferedReader br = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
             String currentTerm = null;
@@ -108,6 +108,23 @@ public class GlossaryTool implements McpToolImplementation {
         } catch (IOException e) {
             throw new RuntimeException("Error reading glossary file: " + path, e);
         }
+    }
+
+    /**
+     * Checks if there is a glossary file defined.
+     * @return <code>true</code> in case of a glossary file
+     */
+    public static boolean hasGlossary() {
+        String path = System.getProperty(PROP_PATH);
+        if (path == null || path.isBlank()) {
+            return false;
+        }
+        if (System.getProperty(PROP_DESCRIPTION) == null) {
+            return false;
+        }
+
+        Path filePath = Paths.get(path);
+        return Files.exists(filePath);
     }
 
     private void addEntry(String term, String description) {

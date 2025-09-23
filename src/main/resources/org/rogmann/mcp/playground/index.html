@@ -229,12 +229,12 @@
     
     <div class="row">
         <label for="toolTitle">Tool Title</label>
-        <input type="text" id="toolTitle" name="toolTitle" value="">
+        <input type="text" id="toolTitle" name="toolTitle" title="Name of the tool (without spaces)" value="">
     </div>
     
     <div class="row">
         <label for="toolDescription">Tool Description</label>
-        <textarea id="toolDescription" name="toolDescription" rows="3"></textarea>
+        <textarea id="toolDescription" name="toolDescription" title="Short description of the tool" rows="3"></textarea>
     </div>
 
     <div class="row">
@@ -242,12 +242,12 @@
             Property Name
             <button type="button" id="btnAddProperty">[+]</button>
         </label>
-        <input type="text" id="propertyName" name="propertyName" value="">
+        <input type="text" id="propertyName" name="propertyName" title="Name of the first property (without spaces)" value="">
     </div>
 
     <div class="row">
         <label for="propertyDescription">Property Description</label>
-        <textarea id="propertyDescription" name="propertyDescription" rows="3"></textarea>
+        <textarea id="propertyDescription" name="propertyDescription" title="Short description of the first property" rows="3"></textarea>
     </div>
 
     <div class="row" id="property2Section" style="display: none;">
@@ -255,24 +255,24 @@
             Property 2 Name
             <button type="button" id="btnRemoveProperty">[-]</button>
         </label>
-        <input type="text" id="property2Name" name="property2Name" placeholder="e.g. Date">
+        <input type="text" id="property2Name" name="property2Name" placeholder="Name of the second property (without spaces)">
     </div>
 
     <div class="row" id="property2DescriptionRow" style="display: none;">
         <label for="property2Description">Property 2 Description</label>
-        <textarea id="property2Description" name="property2Description" rows="3" placeholder="e.g. The date for the weather forecast"></textarea>
+        <textarea id="property2Description" name="property2Description" rows="3" placeholder="Short description of the second property"></textarea>
     </div>
 
     <div class="row">
         <label for="toolRequest">Tool Request</label>
         <div class="animated-textarea-wrapper">
-            <textarea id="toolRequest" name="toolRequest" rows="3" readonly></textarea>
+            <textarea id="toolRequest" name="toolRequest" title="Request of the LLM" rows="3" readonly></textarea>
         </div>
     </div>
 
     <div class="row">
-        <label for="propertyValue">Response (Property Value)</label>
-        <textarea id="propertyValue" name="propertyValue" rows="5"></textarea>
+        <label for="propertyValue">Response</label>
+        <textarea id="propertyValue" name="propertyValue" title="Answer to be filled" rows="5"></textarea>
     </div>
 
     <div class="row">
@@ -284,6 +284,7 @@
         <button id="btnPreset1">Preset 1</button>
         <button id="btnPreset2">Preset 2</button>
         <button id="btnPreset3">Preset 3</button>
+        <button id="btnGlossaryDemo" style="display:none;">Glossary Demo</button>
     </div>
 
     <div class="row">

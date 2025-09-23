@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +39,7 @@ import org.rogmann.llmva4j.mcp.McpToolPropertyDescription;
 import org.rogmann.llmva4j.server.IHttpExchange;
 import org.rogmann.llmva4j.server.RequestForwarder;
 import org.rogmann.llmva4j.server.UiServer;
+import org.rogmann.mcp.examples.GlossaryTool;
 import org.rogmann.mcp.server.HttpExchangeDecorator;
 import org.rogmann.tcpipproxy.WebSocketServer;
 import org.rogmann.tcpipproxy.WebSocketServer.WebSocketConnection;
@@ -98,6 +100,9 @@ public class McpPlaygroundServerMain {
     /** Prefix of user-cookie */
     private static final String PREFIX_COOKIE_USER = "MCP_PLAYGROUND_USER_ID=";
 
+    /** Title of glossary demo */
+    private static final String TITLE_GLOSSARY_DEMO = "glossary_tool_demo";
+
     private static final Map<String, String> MIME_TYPES = new HashMap<>(); 
 
     /** initial user counter */
@@ -118,6 +123,9 @@ public class McpPlaygroundServerMain {
 
     /** tool-responses */
     private final BlockingQueue<Map<String, Object>> queueToolResponses = new LinkedBlockingQueue<>();
+
+    /** glossary demo-tool */
+    private final GlossaryTool glossaryTool;
 
     static {
         MIME_TYPES.put("html", "text/html; charset=UTF-8");
@@ -158,6 +166,14 @@ public class McpPlaygroundServerMain {
         requestForwarder = slRequestForwarder.findFirst()
                 .orElse((requestMap, messagesWithTools, listOpenAITools, url) -> UiServer.forwardRequest(requestMap, messagesWithTools, listOpenAITools, url));
         LOG.info("RequestForwarder: " + requestForwarder);
+
+        if (GlossaryTool.hasGlossary()) {
+            // We can enable the glossary demo.
+            glossaryTool = new GlossaryTool();
+        } else {
+            glossaryTool = null;
+        }
+
     }
 
     private WebSocketHandler createWsHandler() {
@@ -189,6 +205,10 @@ public class McpPlaygroundServerMain {
                         respMessage = "Initial user: " + initialUser;
                         actionResponse = "initUser";
                         mapResponse.put("userId", initialUser);
+
+                        if (glossaryTool != null) {
+                            mapResponse.put("glossaryToolEnabled", true);
+                        }
                     }
                 }
                 else if ("startMcp".equals(action)) {
@@ -278,6 +298,13 @@ public class McpPlaygroundServerMain {
             requiredFields
         );
 
+        boolean isGlossaryDemo = TITLE_GLOSSARY_DEMO.equals(toolTitle) && glossaryTool != null;
+        if (isGlossaryDemo) {
+            toolTitle = glossaryTool.getName();
+            toolDescription = glossaryTool.getTool().description();
+            inputSchema = glossaryTool.getTool().inputSchema();
+        }
+
         McpToolInterface mcpInterface = new McpToolInterface(
             toolTitle,
             toolTitle,
@@ -286,6 +313,28 @@ public class McpPlaygroundServerMain {
         );
 
         McpToolImplementation toolImpl = createMcpToolImplementation(mcpInterface, wsConn, queueToolResponses);
+        if (isGlossaryDemo) {
+            toolImpl = createMcpToolImplGlossary(mcpInterface, wsConn, queueToolResponses);
+
+            // We inform the web-UI.
+            Map<String, Object> mapJson = new LinkedHashMap<>();
+            mapJson.put("action", "toolDefinition");
+            mapJson.put("toolTitle", mcpInterface.title());
+            mapJson.put("toolDescription", mcpInterface.description());
+            Map<String, McpToolPropertyDescription> props = mcpInterface.inputSchema().properties();
+            List<Entry<String, McpToolPropertyDescription>> listProps = props.entrySet().stream().toList();
+            mapJson.put("param1Name", listProps.get(0).getKey());
+            mapJson.put("param1Description", listProps.get(0).getValue().description());
+            String jsonMsg = LightweightJsonHandler.dumpJson(mapJson);
+
+            // Send tool-properties to the web-socket client.
+            try {
+                wsConn.send(jsonMsg);
+            } catch (IOException e) {
+                LOG.severe("IO-error while seding tool-response: " + jsonMsg);
+            }
+
+        }
         mapMcpTools.put(userName, toolImpl);
 
         McpHttpClient mcpClient = new McpHttpClient();
@@ -521,6 +570,46 @@ public class McpPlaygroundServerMain {
         };
         return toolImpl;
     }
+
+    private McpToolImplementation createMcpToolImplGlossary(McpToolInterface toolInterface, WebSocketConnection wsConn,
+            BlockingQueue<Map<String, Object>> queueToolResponses) {
+        McpToolImplementation toolImpl = new McpToolImplementation() {
+
+            @Override
+            public McpToolInterface getTool() {
+                return toolInterface;
+            }
+
+            @Override
+            public String getName() {
+                return toolInterface.name();
+            }
+
+            @Override
+            public List<Map<String, Object>> call(Map<String, Object> params) {
+                List<Map<String, Object>> response = glossaryTool.call(params);
+
+                // We inform the web-UI.
+                Map<String, Object> mapJson = new LinkedHashMap<>();
+                mapJson.put("action", "toolResponse");
+                mapJson.put("toolRequest", params);
+                mapJson.put("toolResponse", response.get(0).get("text"));
+                String jsonMsg = LightweightJsonHandler.dumpJson(mapJson);
+                LOG.info("toolResponse: " + jsonMsg);
+
+                // Send tool-response to the web-socket client.
+                try {
+                    wsConn.send(jsonMsg);
+                } catch (IOException e) {
+                    LOG.severe("IO-error while seding tool-response: " + jsonMsg);
+                }
+
+                return response;
+            }
+        };
+        return toolImpl;
+    }
+
 
     static String escapeHtml(String s) {
         if (s == null) return "";

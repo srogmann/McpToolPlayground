@@ -100,6 +100,10 @@ function handleMessage(message) {
 
                 // Store the user-id in a session cookie.
                 document.cookie = `MCP_PLAYGROUND_USER_ID=${encodeURIComponent(data.userId)}; Path=/; SameSite=Strict`;
+
+                if (data.glossaryToolEnabled) {
+                    $('#btnGlossaryDemo').style.display = 'block';
+                }
             }
             else if (action === 'toolCall') {
                 const toolRequestTextarea = $('#toolRequest');
@@ -115,6 +119,23 @@ function handleMessage(message) {
 
                 // Add animation class
                 wrapper.classList.add('animate-pulse');
+            }
+            else if (action === 'toolDefinition') {
+                $('#toolTitle').value = data.toolTitle;
+                $('#toolDescription').value = data.toolDescription;
+                $('#propertyName').value = data.param1Name;
+                $('#propertyDescription').value = data.param1Description;
+                $('#property2Name').value = '';
+                $('#property2Description').value = '';
+                $('#toolRequest').value = '';
+                $('#propertyValue').value = '';
+            }
+            else if (action === 'toolResponse') {
+                const toolRequestTextarea = $('#toolRequest');f
+                toolRequestTextarea.value = JSON.stringify(data.toolRequest);
+
+                const toolResponseTextarea = $('#propertyValue');
+                toolResponseTextarea.value = JSON.stringify(data.toolResponse);
             }
             else if (data.action === 'uiServerStarted') {
                 const uiUrl = data.url;
@@ -166,6 +187,12 @@ function initPage() {
                 toolDescription: "Fetches latest news articles from various sources",
                 propertyName: "Category",
                 propertyDescription: "The news category to fetch"
+            },
+            4: {
+                toolTitle: "glossary_tool_demo",
+                toolDescription: "",
+                propertyName: "",
+                propertyDescription: ""
             }
         };
 
@@ -281,6 +308,10 @@ function initPage() {
 
     $('#btnPreset3').addEventListener("click", function(event) {
         setPreset(3);
+    });
+
+    $('#btnGlossaryDemo').addEventListener("click", function(event) {
+        setPreset(4);
     });
 
     // Reset animation when focusing on propertyValue
