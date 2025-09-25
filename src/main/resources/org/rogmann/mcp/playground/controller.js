@@ -131,7 +131,7 @@ function handleMessage(message) {
                 $('#propertyValue').value = '';
             }
             else if (action === 'toolResponse') {
-                const toolRequestTextarea = $('#toolRequest');f
+                const toolRequestTextarea = $('#toolRequest');
                 toolRequestTextarea.value = JSON.stringify(data.toolRequest);
 
                 const toolResponseTextarea = $('#propertyValue');
@@ -174,25 +174,33 @@ function initPage() {
                 toolTitle: "get_weather",
                 toolDescription: "This tool determines the weather at a given place. Weather forecast",
                 propertyName: "Place",
-                propertyDescription: "Name of the place where the weather is"
+                propertyDescription: "Name of the place where the weather is",
+                property2Name: "",
+                property2Description: ""
             },
             2: {
                 toolTitle: "convert_currency",
                 toolDescription: "Converts currency values between different currencies",
-                propertyName: "Currency",
-                propertyDescription: "The currency to convert from"
+                propertyName: "SourceCurrency",
+                propertyDescription: "The currency to convert from, e.g. USD, EUR",
+                property2Name: "TargetCurrency",
+                property2Description: "The currency to convert to, e.g. EUR, JPY"
             },
             3: {
                 toolTitle: "fetch_news",
                 toolDescription: "Fetches latest news articles from various sources",
                 propertyName: "Category",
-                propertyDescription: "The news category to fetch"
+                propertyDescription: "The news category to fetch (e.g. sports, politics)",
+                property2Name: "",
+                property2Description: ""
             },
             4: {
                 toolTitle: "glossary_tool_demo",
                 toolDescription: "",
                 propertyName: "",
-                propertyDescription: ""
+                propertyDescription: "",
+                property2Name: "",
+                property2Description: ""
             }
         };
 
@@ -202,6 +210,23 @@ function initPage() {
             $('#toolDescription').value = preset.toolDescription;
             $('#propertyName').value = preset.propertyName;
             $('#propertyDescription').value = preset.propertyDescription;
+            $('#property2Name').value = preset.property2Name;
+            $('#property2Description').value = preset.property2Description;
+
+            // Automatisch anzeigen, wenn property2Name gesetzt ist
+            const prop2Section = $('#property2Section');
+            const prop2DescRow = $('#property2DescriptionRow');
+            const btnAdd = $('#btnAddProperty');
+
+            if (preset.property2Name) {
+                prop2Section.style.display = 'flex';
+                prop2DescRow.style.display = 'flex';
+                btnAdd.disabled = true;
+            } else {
+                prop2Section.style.display = 'none';
+                prop2DescRow.style.display = 'none';
+                btnAdd.disabled = false;
+            }
 
             // Clear Tool-Response und Response
             $('#toolRequest').value = '';
