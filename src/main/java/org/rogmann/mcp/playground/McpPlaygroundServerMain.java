@@ -360,6 +360,10 @@ public class McpPlaygroundServerMain {
                 processPropsRequest(exchange, llmUrl);
                 return;
             }
+            if ((PREFIX_CHAT + "slots").equals(exchange.getRequestRawPath())) {
+                processSlotsRequest(exchange, llmUrl);
+                return;
+            }
             processChatRequest(exchange);
             return;
         }
@@ -498,12 +502,34 @@ public class McpPlaygroundServerMain {
     }
 
     private void processPropsRequest(HttpServerDispatchExchange exchange, String llmUrl2) {
-        Map<String, Object> mapProps = new LinkedHashMap<>();
-        mapProps.put("id", 0);
-        mapProps.put("model_path", "remote model");
-        mapProps.put("build_info", "unknown");
+        Map<String, Object> mapProps = new LinkedHashMap<String, Object>();
+        Map<String, Object> mapDefGenSettings = new LinkedHashMap<String, Object>();
+        Map<String, Object> mapParams = new LinkedHashMap<String, Object>();
+        mapParams.put("top_k", 20);
+        mapParams.put("top_p", 0.95f);
+        mapDefGenSettings.put("params", mapParams);
+        mapDefGenSettings.put("n_ctx", 32768);
+        mapProps.put("default_generation_settings", mapDefGenSettings);
+        mapProps.put("total_slots", 1);
+        mapProps.put("model_path", "unknown model path");
+        mapProps.put("modalities", Map.of("vision", false, "audio", false));
+        mapProps.put("webui", "true");
+        mapProps.put("build_info", "UiServer - build unknown");
         String jsonProps = LightweightJsonHandler.dumpJson(mapProps);
         byte[] bufJson = jsonProps.getBytes(StandardCharsets.UTF_8);
+
+        exchange.getResponseHeaders().set("Content-Type", "text/json");
+        try {
+            exchange.sendResponseHeaders(200, bufJson.length);
+            exchange.getResponseBody().write(bufJson);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "IO-error while sending LLM-props", e);
+        }
+    }
+
+    private void processSlotsRequest(HttpServerDispatchExchange exchange, String llmUrl2) {
+        String jsonSlots = "[{\"id\":0,\"n_ctx\":32768,\"speculative\":false,\"is_processing\":false}]";
+        byte[] bufJson = jsonSlots.getBytes(StandardCharsets.UTF_8);
 
         exchange.getResponseHeaders().set("Content-Type", "text/json");
         try {
