@@ -12,7 +12,8 @@ public class ToolListSupplier implements McpToolImplementations {
 
     @Override
     public List<McpToolImplementation> get() {
-        return List.of(new VideoSearchTool(), new VideoPlayerTool());
+        return List.of(new CreateNewFileTool(), new ReadTextFileTool(),
+                new ManageJavaMethodsTool(), new FindFilesByGlobTool());
     }
 
 }
