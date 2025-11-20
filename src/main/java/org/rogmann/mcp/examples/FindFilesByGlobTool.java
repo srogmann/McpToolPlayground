@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -91,6 +92,9 @@ public class FindFilesByGlobTool implements McpToolImplementation {
 
         String projectName = (String) arguments.get("projectName");
         String globPattern = (String) arguments.get("globPattern");
+        if (globPattern == null) {
+            globPattern = "**/*.*";
+        }
         Integer fileCountLimit = (Integer) arguments.get("fileCountLimit");
         String subDirectoryRelativePath = (String) arguments.get("subDirectoryRelativePath");
 
@@ -99,14 +103,14 @@ public class FindFilesByGlobTool implements McpToolImplementation {
 
         String projectDirProp = System.getProperty("IDE_PROJECT_DIR");
         if (projectDirProp == null || projectDirProp.isBlank()) {
-            result.put("error", "System property IDE_PROJECT_DIR is not set");
+            result.put("error", getClass().getSimpleName() + " is missing IDE_PROJECT_DIR");
             LOGGER.severe("IDE_PROJECT_DIR system property is not defined.");
             return List.of(result);
         }
 
         Path projectBaseDir = Paths.get(projectDirProp).toAbsolutePath().normalize();
         if (!Files.exists(projectBaseDir)) {
-            result.put("error", "Project base directory does not exist: " + projectBaseDir);
+            result.put("error", getClass().getSimpleName() + " didn't find project base directory");
             LOGGER.severe("Project base directory does not exist: " + projectBaseDir);
             return List.of(result);
         }
@@ -117,7 +121,7 @@ public class FindFilesByGlobTool implements McpToolImplementation {
             try {
                 projectFilterPattern = Pattern.compile(projectFilterProp);
             } catch (PatternSyntaxException e) {
-                result.put("error", "Invalid regex in IDE_PROJECT_FILTER: " + e.getMessage());
+                result.put("error", getClass().getSimpleName() + " has invalid IDE_PROJECT_FILTER");
                 LOGGER.severe("Invalid regex in IDE_PROJECT_FILTER: " + e.getMessage());
                 return List.of(result);
             }
@@ -129,6 +133,10 @@ public class FindFilesByGlobTool implements McpToolImplementation {
             return List.of(result);
         }
 
+        if (projectName == null) {
+            result.put("error", "projectName is missing");
+            return List.of(result);
+        }
         Path projectDir = projectBaseDir.resolve(projectName).normalize();
         if (!projectDir.startsWith(projectBaseDir)) {
             result.put("error", "Project directory is outside base directory, access denied");
@@ -137,14 +145,14 @@ public class FindFilesByGlobTool implements McpToolImplementation {
         }
 
         if (!Files.exists(projectDir)) {
-            result.put("error", "Project directory does not exist: " + projectDir);
+            result.put("error", getClass().getSimpleName() + " didn't find the project directory");
             LOGGER.severe("Project directory does not exist: " + projectDir);
             return List.of(result);
         }
 
         Path patternRoot = projectDir.resolve(".").normalize();
         if (!patternRoot.startsWith(projectDir)) {
-            result.put("error", "Invalid pattern root path after resolution");
+            result.put("error", "Invalid pattern root path after resolution of " + projectDir);
             LOGGER.warning("Pattern root path resolves outside project directory: " + patternRoot);
             return List.of(result);
         }
@@ -197,8 +205,8 @@ public class FindFilesByGlobTool implements McpToolImplementation {
             LOGGER.fine("Found " + matchingFiles.size() + " file(s) matching pattern '" + globPattern +
                     "' in project '" + projectName + "' under subdirectory '" + subDirectoryRelativePath + "'");
         } catch (Exception e) {
-            result.put("error", "Failed to process glob pattern: " + e.getMessage());
-            LOGGER.severe("Exception during glob processing for pattern '" + globPattern + "': " + e.getMessage());
+            result.put("error", String.format("Failed to process glob pattern '%s' for '%s'", globPattern, projectName));
+            LOGGER.log(Level.SEVERE, "Exception during glob processing for pattern '" + globPattern + "' in: " + projectName + " / " + searchRoot, e);
             return List.of(result);
         }
 
@@ -228,9 +236,9 @@ public class FindFilesByGlobTool implements McpToolImplementation {
                         break;
                     }
 
-                    if (filter.accept(entry)) {
+                    Path relativePath = rootDir.relativize(entry);
+                    if (filter.accept(relativePath)) {
                         Map<String, Object> fileInfo = new HashMap<>();
-                        Path relativePath = rootDir.relativize(entry);
                         fileInfo.put("path", relativePath.toString());
                         try {
                             fileInfo.put("size", Files.size(entry));
