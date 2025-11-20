@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -103,7 +104,7 @@ public class CreateNewFileTool implements McpToolImplementation {
 
         Path projectBaseDir = Paths.get(projectDirProp).toAbsolutePath().normalize();
         if (!Files.exists(projectBaseDir)) {
-            result.put("error", "Project base directory does not exist: " + projectBaseDir);
+            result.put("error", "Project base directory does not exist");
             LOGGER.severe("Project base directory does not exist: " + projectBaseDir);
             return List.of(result);
         }
@@ -114,7 +115,7 @@ public class CreateNewFileTool implements McpToolImplementation {
             try {
                 projectFilterPattern = Pattern.compile(projectFilterProp);
             } catch (PatternSyntaxException e) {
-                result.put("error", "Invalid regex in IDE_PROJECT_FILTER: " + e.getMessage());
+                result.put("error", "Invalid regex in IDE_PROJECT_FILTER");
                 LOGGER.severe("Invalid regex in IDE_PROJECT_FILTER: " + e.getMessage());
                 return List.of(result);
             }
@@ -134,7 +135,7 @@ public class CreateNewFileTool implements McpToolImplementation {
         }
 
         if (!Files.exists(projectDir)) {
-            result.put("error", "Project directory does not exist: " + projectDir);
+            result.put("error", "Project directory does not exist: " + projectName);
             LOGGER.severe("Project directory does not exist: " + projectDir);
             return List.of(result);
         }
@@ -147,7 +148,7 @@ public class CreateNewFileTool implements McpToolImplementation {
         }
 
         if (Files.exists(targetFile) && !overwrite) {
-            result.put("error", "File already exists and overwrite is not allowed: " + targetFile);
+            result.put("error", "File already exists and overwrite is not allowed: " + projectBaseDir.relativize(targetFile));
             LOGGER.info("File exists, overwrite=false: " + targetFile);
             return List.of(result);
         }
@@ -156,11 +157,11 @@ public class CreateNewFileTool implements McpToolImplementation {
             Files.createDirectories(targetFile.getParent());
             Files.write(targetFile, text.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             result.put("status", "success");
-            result.put("message", "File written: " + targetFile);
+            result.put("message", "File written in project " + projectName + ": " + projectDir.relativize(targetFile));
             LOGGER.info("Successfully created file: " + targetFile);
         } catch (IOException e) {
-            result.put("error", "Failed to write file: " + e.getMessage());
-            LOGGER.severe("IOException while writing file " + targetFile + ": " + e.getMessage());
+            result.put("error", "Failed to write file '" + projectBaseDir.relativize(targetFile) + "'");
+            LOGGER.log(Level.SEVERE, "IOException while writing file " + targetFile, e);
             throw new UncheckedIOException(e);
         }
 

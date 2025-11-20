@@ -97,7 +97,7 @@ public class ReadTextFileTool implements McpToolImplementation {
 
         Path projectBaseDir = Paths.get(projectDirProp).toAbsolutePath().normalize();
         if (!Files.exists(projectBaseDir)) {
-            result.put("error", "Project base directory does not exist: " + projectBaseDir);
+            result.put("error", "Project base directory does not exist.");
             LOGGER.severe("Project base directory does not exist: " + projectBaseDir);
             return List.of(result);
         }
@@ -108,7 +108,7 @@ public class ReadTextFileTool implements McpToolImplementation {
             try {
                 projectFilterPattern = Pattern.compile(projectFilterProp);
             } catch (PatternSyntaxException e) {
-                result.put("error", "Invalid regex in IDE_PROJECT_FILTER: " + e.getMessage());
+                result.put("error", "Invalid regex in IDE_PROJECT_FILTER");
                 LOGGER.severe("Invalid regex in IDE_PROJECT_FILTER: " + e.getMessage());
                 return List.of(result);
             }
@@ -128,26 +128,26 @@ public class ReadTextFileTool implements McpToolImplementation {
         }
 
         if (!Files.exists(projectDir)) {
-            result.put("error", "Project directory does not exist: " + projectDir);
+            result.put("error", "Project directory does not exist: " + projectBaseDir.relativize(projectDir));
             LOGGER.severe("Project directory does not exist: " + projectDir);
             return List.of(result);
         }
 
         Path targetFile = projectDir.resolve(pathInProject).normalize();
         if (!targetFile.startsWith(projectDir)) {
-            result.put("error", "Path traversal detected in pathInProject: " + pathInProject);
+            result.put("error", "Path traversal detected in pathInProject: " + projectName);
             LOGGER.warning("Path traversal attempt detected: " + pathInProject);
             return List.of(result);
         }
 
         if (!Files.exists(targetFile)) {
-            result.put("error", "File does not exist: " + targetFile);
+            result.put("error", "File does not exist in project " + projectName + ": " + projectDir.relativize(targetFile));
             LOGGER.info("File not found: " + targetFile);
             return List.of(result);
         }
 
         if (Files.isDirectory(targetFile)) {
-            result.put("error", "Path refers to a directory, not a file: " + targetFile);
+            result.put("error", "Path refers to a directory, not a file: " + projectDir.relativize(targetFile));
             LOGGER.info("Cannot read text from directory: " + targetFile);
             return List.of(result);
         }
