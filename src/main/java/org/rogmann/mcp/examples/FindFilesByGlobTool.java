@@ -126,6 +126,18 @@ public class FindFilesByGlobTool implements McpToolImplementation {
                 return List.of(result);
             }
         }
+        
+        String projectSubExcludeFilterProp = System.getProperty("IDE_PROJECT_SUB_EXCLUDE_FILTER");
+        Pattern projectSubExcludePattern = null;
+        if (projectSubExcludeFilterProp != null && !projectSubExcludeFilterProp.isBlank()) {
+            try {
+                projectSubExcludePattern = Pattern.compile(projectSubExcludeFilterProp);
+            } catch (PatternSyntaxException e) {
+                result.put("error", getClass().getSimpleName() + " has invalid IDE_PROJECT_SUB_EXCLUDE_FILTER");
+                LOGGER.severe("Invalid regex in IDE_PROJECT_SUB_EXCLUDE_FILTER: " + e.getMessage());
+                return List.of(result);
+            }
+        }
 
         if (projectFilterPattern != null && !projectFilterPattern.matcher(projectName).matches()) {
             result.put("error", "Project name '" + projectName + "' is not allowed by filter");
@@ -196,7 +208,7 @@ public class FindFilesByGlobTool implements McpToolImplementation {
             String qualifiedPattern = "glob:" + globPattern;
             DirectoryStream.Filter<Path> filter = fileSystem.getPathMatcher(qualifiedPattern)::matches;
 
-            walkAndMatch(searchRoot, projectDir, filter, matchingFiles, limit);
+            walkAndMatch(searchRoot, projectDir, filter, projectSubExcludePattern, matchingFiles,  limit);
 
             result.put("status", "success");
             result.put("files", matchingFiles);
@@ -219,12 +231,13 @@ public class FindFilesByGlobTool implements McpToolImplementation {
      * @param basePath base path to start walking from
      * @param rootDir base directory of the search (for relativization)
      * @param filter filter to apply on paths
+     * @param projectSubExcludePattern exclude-filter 
      * @param result list to collect matched files
      * @param limit maximum number of files to collect
      * @throws IOException if an I/O error occurs
      */
     private void walkAndMatch(Path basePath, Path rootDir, DirectoryStream.Filter<Path> filter,
-                             List<Map<String, Object>> result, int limit) throws IOException {
+                             Pattern projectSubExcludePattern, List<Map<String, Object>> result, int limit) throws IOException {
         if (result.size() >= limit) {
             return;
         }
@@ -237,6 +250,9 @@ public class FindFilesByGlobTool implements McpToolImplementation {
                     }
 
                     Path relativePath = rootDir.relativize(entry);
+                    if (projectSubExcludePattern != null && projectSubExcludePattern.matcher(relativePath.toString()).matches()) {
+                        continue;
+                    }
                     if (filter.accept(relativePath)) {
                         Map<String, Object> fileInfo = new HashMap<>();
                         fileInfo.put("path", relativePath.toString());
@@ -249,7 +265,7 @@ public class FindFilesByGlobTool implements McpToolImplementation {
                     }
 
                     if (Files.isDirectory(entry)) {
-                        walkAndMatch(entry, rootDir, filter, result, limit);
+                        walkAndMatch(entry, rootDir, filter, projectSubExcludePattern, result, limit);
                     }
                 }
             }
