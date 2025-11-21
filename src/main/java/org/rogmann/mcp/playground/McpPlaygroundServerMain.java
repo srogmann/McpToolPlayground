@@ -103,6 +103,9 @@ public class McpPlaygroundServerMain {
     /** Title of glossary demo */
     private static final String TITLE_GLOSSARY_DEMO = "glossary_tool_demo";
 
+    /** Title of internal tools */
+    private static final String TITLE_INTERNAL_TOOLS = "internal_tools";
+
     private static final Map<String, String> MIME_TYPES = new HashMap<>(); 
 
     /** initial user counter */
@@ -115,8 +118,8 @@ public class McpPlaygroundServerMain {
     private final String llmUrl;
     private final String publicPath;
 
-    /** Map from user-id to tool-implementation */
-    private ConcurrentMap<String, McpToolImplementation> mapMcpTools = new ConcurrentHashMap<>();
+    /** Map from user-id to map from tool-name to tool-implementation */
+    private ConcurrentMap<String, ConcurrentMap<String, McpToolImplementation>> mapMcpTools = new ConcurrentHashMap<>();
 
     /** Map from user-id to mcp-client */
     private final ConcurrentMap<String, McpHttpClient> mapMcpClient = new ConcurrentHashMap<>();
@@ -209,6 +212,11 @@ public class McpPlaygroundServerMain {
                         if (glossaryTool != null) {
                             mapResponse.put("glossaryToolEnabled", true);
                         }
+                        Map<String, McpToolImplementation> mapTools = new HashMap<String, McpToolImplementation>();
+                        McpHttpServer.loadTools(mapTools);
+                        if (!mapTools.isEmpty()) {
+                            mapResponse.put("internalToolsEnabled",  true);
+                        }
                     }
                 }
                 else if ("startMcp".equals(action)) {
@@ -298,33 +306,20 @@ public class McpPlaygroundServerMain {
             requiredFields
         );
 
-        boolean isGlossaryDemo = TITLE_GLOSSARY_DEMO.equals(toolTitle) && glossaryTool != null;
-        if (isGlossaryDemo) {
-            toolTitle = glossaryTool.getName();
-            toolDescription = glossaryTool.getTool().description();
-            inputSchema = glossaryTool.getTool().inputSchema();
-        }
+        ConcurrentMap<String, McpToolImplementation> mapTools = mapMcpTools.computeIfAbsent(userName, n -> new ConcurrentHashMap<>());
+        mapTools.clear();
 
-        McpToolInterface mcpInterface = new McpToolInterface(
-            toolTitle,
-            toolTitle,
-            toolDescription,
-            inputSchema
-        );
-
-        McpToolImplementation toolImpl = createMcpToolImplementation(mcpInterface, wsConn, queueToolResponses);
-        if (isGlossaryDemo) {
-            toolImpl = createMcpToolImplGlossary(mcpInterface, wsConn, queueToolResponses);
-
+        boolean isInternalTools = TITLE_INTERNAL_TOOLS.equals(toolTitle);
+        if (isInternalTools) {
             // We inform the web-UI.
             Map<String, Object> mapJson = new LinkedHashMap<>();
             mapJson.put("action", "toolDefinition");
-            mapJson.put("toolTitle", mcpInterface.title());
-            mapJson.put("toolDescription", mcpInterface.description());
-            Map<String, McpToolPropertyDescription> props = mcpInterface.inputSchema().properties();
-            List<Entry<String, McpToolPropertyDescription>> listProps = props.entrySet().stream().toList();
-            mapJson.put("param1Name", listProps.get(0).getKey());
-            mapJson.put("param1Description", listProps.get(0).getValue().description());
+            mapJson.put("toolTitle", "internal tool");
+            mapJson.put("toolDescription", "We will display the used internal tools here.");
+            mapJson.put("param1Name", "");
+            mapJson.put("param1Description", "");
+            mapJson.put("param2Name", "");
+            mapJson.put("param2Description", "");
             String jsonMsg = LightweightJsonHandler.dumpJson(mapJson);
 
             // Send tool-properties to the web-socket client.
@@ -334,8 +329,53 @@ public class McpPlaygroundServerMain {
                 LOG.severe("IO-error while seding tool-response: " + jsonMsg);
             }
 
+            Map<String, McpToolImplementation> mapToolsInternal = new LinkedHashMap<String, McpToolImplementation>();
+            McpHttpServer.loadTools(mapToolsInternal);
+
+            // We add a WebUI-information-wrapper around the tools.
+            mapToolsInternal.forEach((name, tool) -> mapTools.put(name, createMcpToolImplWithWebuiCallback(tool, wsConn, queueToolResponses, null)));
+        } else {
+            boolean isGlossaryDemo = TITLE_GLOSSARY_DEMO.equals(toolTitle) && glossaryTool != null;
+            if (isGlossaryDemo) {
+                toolTitle = glossaryTool.getName();
+                toolDescription = glossaryTool.getTool().description();
+                inputSchema = glossaryTool.getTool().inputSchema();
+            }
+
+            McpToolInterface mcpInterface = new McpToolInterface(
+                    toolTitle,
+                    toolTitle,
+                    toolDescription,
+                    inputSchema
+                );
+
+            if (isGlossaryDemo) {
+                McpToolImplementation toolImpl = createMcpToolImplWithWebuiCallback(glossaryTool, wsConn, queueToolResponses, "text");
+                mapTools.put(toolImpl.getName(), toolImpl);
+
+                // We inform the web-UI.
+                Map<String, Object> mapJson = new LinkedHashMap<>();
+                mapJson.put("action", "toolDefinition");
+                mapJson.put("toolTitle", mcpInterface.title());
+                mapJson.put("toolDescription", mcpInterface.description());
+                Map<String, McpToolPropertyDescription> props = mcpInterface.inputSchema().properties();
+                List<Entry<String, McpToolPropertyDescription>> listProps = props.entrySet().stream().toList();
+                mapJson.put("param1Name", listProps.get(0).getKey());
+                mapJson.put("param1Description", listProps.get(0).getValue().description());
+                String jsonMsg = LightweightJsonHandler.dumpJson(mapJson);
+
+                // Send tool-properties to the web-socket client.
+                try {
+                    wsConn.send(jsonMsg);
+                } catch (IOException e) {
+                    LOG.severe("IO-error while seding tool-response: " + jsonMsg);
+                }
+            }
+            else {
+                McpToolImplementation toolImpl = createMcpToolImplementation(mcpInterface, wsConn, queueToolResponses);
+                mapTools.put(toolImpl.getName(), toolImpl);
+            }
         }
-        mapMcpTools.put(userName, toolImpl);
 
         McpHttpClient mcpClient = new McpHttpClient();
         InetSocketAddress serverAddress = server.getServerAddress();
@@ -346,8 +386,8 @@ public class McpPlaygroundServerMain {
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("Invalid tool-URL: " + toolUri, e);
         }
-        McpToolWithUri toolWithUrl = new McpToolWithUri(mcpInterface, toolUrl);
-        mcpClient.registerTool(toolWithUrl);
+        mapTools.forEach((name, tool) -> mcpClient.registerTool(new McpToolWithUri(tool.getTool(), toolUrl)));
+        LOG.info("McpClient, tools: " + mapTools);
         mapMcpClient.put(userName, mcpClient);
     }
 
@@ -420,8 +460,10 @@ public class McpPlaygroundServerMain {
             sendError(exchange, 400, "Missing cookie in request");
             return null;
         }
-        if (cookie.startsWith(PREFIX_COOKIE_USER)) {
-            userId = cookie.substring(PREFIX_COOKIE_USER.length());
+        Pattern pCookieUser = Pattern.compile("(?:.*; *)" + PREFIX_COOKIE_USER + "([^; ]+).*");
+        Matcher mCookieUser = pCookieUser.matcher(cookie);
+        if (mCookieUser.matches()) {
+            userId = mCookieUser.group(1);
         }
         if (userId == null) {
             LOG.info("Cookie: " + cookie);
@@ -437,15 +479,12 @@ public class McpPlaygroundServerMain {
         if (userId == null) {
             return;
         }
-        McpToolImplementation toolImpl = mapMcpTools.get(userId);
-        if (toolImpl == null) {
+        ConcurrentMap<String, McpToolImplementation> mapTools = mapMcpTools.get(userId);
+        if (mapTools == null) {
             LOG.severe("Missing tool implementation for user: " + userId);
             sendError(exchange, 400, "unknown user-id");
             return;
         }
-
-        ConcurrentMap<String, McpToolImplementation> mapTools = new ConcurrentHashMap<String, McpToolImplementation>();
-        mapTools.put(toolImpl.getName(), toolImpl);
 
         McpHttpServer.handleRequest(mcpExchange, mapTools);
     }
@@ -597,8 +636,21 @@ public class McpPlaygroundServerMain {
         return toolImpl;
     }
 
-    private McpToolImplementation createMcpToolImplGlossary(McpToolInterface toolInterface, WebSocketConnection wsConn,
-            BlockingQueue<Map<String, Object>> queueToolResponses) {
+    /**
+     * Creates a {@link McpToolImplementation} instance with a web UI callback mechanism.
+     *
+     * This method generates a tool implementation that wraps the provided tool
+     * and adds functionality to send tool responses back to the WebSocket client.
+     *
+     * @param tool the MCP tool to wrap
+     * @param wsConn the WebSocket connection to send responses to
+     * @param queueToolResponses a blocking queue for tool responses (not directly used in this implementation)
+     * @param responseField field name to extract from the response, or <code>null</code> to serialize the entire response
+     * @return a new {@link McpToolImplementation} instance with web UI callback capabilities
+     */
+    private static McpToolImplementation createMcpToolImplWithWebuiCallback(McpToolImplementation tool, WebSocketConnection wsConn,
+            BlockingQueue<Map<String, Object>> queueToolResponses, String responseField) {
+        McpToolInterface toolInterface = tool.getTool();
         McpToolImplementation toolImpl = new McpToolImplementation() {
 
             @Override
@@ -613,24 +665,74 @@ public class McpPlaygroundServerMain {
 
             @Override
             public List<Map<String, Object>> call(Map<String, Object> params) {
-                List<Map<String, Object>> response = glossaryTool.call(params);
+                {
+                    Map<String, Object> mapJson = new LinkedHashMap<>();
+                    mapJson.put("action", "toolDefinition");
+                    //else if (action === 'toolDefinition') {
+                    //    $('#toolTitle').value = data.toolTitle;
+                    //    $('#toolDescription').value = data.toolDescription;
+                    //    $('#propertyName').value = data.param1Name;
+                    //    $('#propertyDescription').value = data.param1Description;
+                    //    $('#property2Name').value = '';
+                    //    $('#property2Description').value = '';
+                    //    $('#toolRequest').value = '';
+                    //    $('#propertyValue').value = '';
+                    //}
+                    // Fill all attributes needed at javascript side
+                    mapJson.put("toolTitle", toolInterface.name());
+                    mapJson.put("toolDescription", toolInterface.description());
+                    List<Entry<String, McpToolPropertyDescription>> props = toolInterface.inputSchema().properties().entrySet().stream().toList();
+                    mapJson.put("param1Name", props.get(0).getKey());
+                    mapJson.put("param1Description", props.get(0).getValue().description());
+                    if (props.size() >= 2) {
+                        mapJson.put("param2Name", props.get(1).getKey());
+                        mapJson.put("param2Description", props.get(1).getValue().description());
+                    } else {
+                        mapJson.put("property2Name", "");
+                        mapJson.put("param2Description", "");
+                    }
 
-                // We inform the web-UI.
+                    sendToolStatus(wsConn, "toolDefinition", mapJson);
+                }
+
+                sendToolStatus(wsConn, "toolRequest", LightweightJsonHandler.dumpJson(params));
+                List<Map<String, Object>> response = tool.call(params);
+
+                String actionText;
+                if (responseField != null) {
+                    actionText = (String) response.get(0).get(responseField);
+                } else {
+                    actionText = LightweightJsonHandler.dumpJson(response.stream().map(obj -> (Object) obj).toList());
+                }
+
+                sendToolStatus(wsConn, "toolResponse", actionText);
+
+                return response;
+            }
+
+            /**
+             * Inform the web UI (web socket client) about a tool event.
+             * @param wsConn web socket connection
+             * @param action id of the event
+             * @param dataKey key of event data
+             * @param data data of event
+             */
+            private void sendToolStatus(WebSocketConnection wsConn, String action, Object data) {
                 Map<String, Object> mapJson = new LinkedHashMap<>();
-                mapJson.put("action", "toolResponse");
-                mapJson.put("toolRequest", params);
-                mapJson.put("toolResponse", response.get(0).get("text"));
-                String jsonMsg = LightweightJsonHandler.dumpJson(mapJson);
-                LOG.info("toolResponse: " + jsonMsg);
+                mapJson.put("action", action);
+                mapJson.put(action, data);
+                sendToolStatus(wsConn, action, mapJson);
+            }
 
-                // Send tool-response to the web-socket client.
+            private void sendToolStatus(WebSocketConnection wsConn, String action, Map<String, Object> mapJson) {
+                String jsonMsg = LightweightJsonHandler.dumpJson(mapJson);
+                LOG.info(action + ": " + jsonMsg);
+
                 try {
                     wsConn.send(jsonMsg);
                 } catch (IOException e) {
-                    LOG.severe("IO-error while seding tool-response: " + jsonMsg);
+                    LOG.severe("IO-error while sending " + action + ": " + jsonMsg);
                 }
-
-                return response;
             }
         };
         return toolImpl;

@@ -104,6 +104,10 @@ function handleMessage(message) {
                 if (data.glossaryToolEnabled) {
                     $('#btnGlossaryDemo').style.display = 'block';
                 }
+                if (data.internalToolsEnabled) {
+                    $('#btnInternalTools').style.display = 'block';
+                }
+
             }
             else if (action === 'toolCall') {
                 const toolRequestTextarea = $('#toolRequest');
@@ -125,15 +129,18 @@ function handleMessage(message) {
                 $('#toolDescription').value = data.toolDescription;
                 $('#propertyName').value = data.param1Name;
                 $('#propertyDescription').value = data.param1Description;
-                $('#property2Name').value = '';
-                $('#property2Description').value = '';
+                $('#property2Name').value = data.param2Name ? data.param2Name : '';
+                $('#property2Description').value = data.param2Description ? data.param2Description : '';
                 $('#toolRequest').value = '';
                 $('#propertyValue').value = '';
             }
-            else if (action === 'toolResponse') {
+            else if (action === 'toolRequest') {
                 const toolRequestTextarea = $('#toolRequest');
                 toolRequestTextarea.value = JSON.stringify(data.toolRequest);
 
+                $('#propertyValue').value = '';
+            }
+            else if (action === 'toolResponse') {
                 const toolResponseTextarea = $('#propertyValue');
                 toolResponseTextarea.value = JSON.stringify(data.toolResponse);
             }
@@ -196,6 +203,14 @@ function initPage() {
             },
             4: {
                 toolTitle: "glossary_tool_demo",
+                toolDescription: "",
+                propertyName: "",
+                propertyDescription: "",
+                property2Name: "",
+                property2Description: ""
+            },
+            5: {
+                toolTitle: "internal_tools",
                 toolDescription: "",
                 propertyName: "",
                 propertyDescription: "",
@@ -337,6 +352,10 @@ function initPage() {
 
     $('#btnGlossaryDemo').addEventListener("click", function(event) {
         setPreset(4);
+    });
+
+    $('#btnInternalTools').addEventListener("click", function(event) {
+        setPreset(5);
     });
 
     // Reset animation when focusing on propertyValue
