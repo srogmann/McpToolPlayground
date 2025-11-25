@@ -701,7 +701,6 @@ public class McpPlaygroundServerMain {
              * Inform the web UI (web socket client) about a tool event.
              * @param wsConn web socket connection
              * @param action id of the event
-             * @param dataKey key of event data
              * @param data data of event
              */
             private void sendToolStatus(WebSocketConnection wsConn, String action, Object data) {
