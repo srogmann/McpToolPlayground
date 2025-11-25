@@ -541,20 +541,7 @@ public class McpPlaygroundServerMain {
     }
 
     private void processPropsRequest(HttpServerDispatchExchange exchange, String llmUrl2) {
-        Map<String, Object> mapProps = new LinkedHashMap<String, Object>();
-        Map<String, Object> mapDefGenSettings = new LinkedHashMap<String, Object>();
-        Map<String, Object> mapParams = new LinkedHashMap<String, Object>();
-        mapParams.put("top_k", 20);
-        mapParams.put("top_p", 0.95f);
-        mapDefGenSettings.put("params", mapParams);
-        mapDefGenSettings.put("n_ctx", 32768);
-        mapProps.put("default_generation_settings", mapDefGenSettings);
-        mapProps.put("total_slots", 1);
-        mapProps.put("model_path", "unknown model path");
-        mapProps.put("modalities", Map.of("vision", false, "audio", false));
-        mapProps.put("webui", "true");
-        mapProps.put("build_info", "UiServer - build unknown");
-        String jsonProps = LightweightJsonHandler.dumpJson(mapProps);
+        String jsonProps = UiServer.buildJsonProps();
         byte[] bufJson = jsonProps.getBytes(StandardCharsets.UTF_8);
 
         exchange.getResponseHeaders().set("Content-Type", "text/json");
