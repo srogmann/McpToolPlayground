@@ -9,7 +9,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -17,8 +16,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.rogmann.llmva4j.mcp.McpToolImplementation;
-import org.rogmann.llmva4j.mcp.McpToolInterface;
 import org.rogmann.llmva4j.mcp.McpToolInputSchema;
+import org.rogmann.llmva4j.mcp.McpToolInterface;
 import org.rogmann.llmva4j.mcp.McpToolPropertyDescription;
 
 /**
