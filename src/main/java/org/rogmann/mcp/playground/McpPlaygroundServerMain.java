@@ -460,7 +460,7 @@ public class McpPlaygroundServerMain {
             sendError(exchange, 400, "Missing cookie in request");
             return null;
         }
-        Pattern pCookieUser = Pattern.compile("(?:.*; *)" + PREFIX_COOKIE_USER + "([^; ]+).*");
+        Pattern pCookieUser = Pattern.compile("(?:.*; *)?" + PREFIX_COOKIE_USER + "([^; ]+).*");
         Matcher mCookieUser = pCookieUser.matcher(cookie);
         if (mCookieUser.matches()) {
             userId = mCookieUser.group(1);
