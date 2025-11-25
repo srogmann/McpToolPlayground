@@ -682,7 +682,11 @@ public class McpPlaygroundServerMain {
                     sendToolStatus(wsConn, "toolDefinition", mapJson);
                 }
 
-                sendToolStatus(wsConn, "toolRequest", LightweightJsonHandler.dumpJson(params));
+                Map<String, Object> mapMsgJson = new LinkedHashMap<>();
+                mapMsgJson.put("action", "toolRequest");
+                mapMsgJson.put("toolRequest", params);
+                sendToolStatus(wsConn, "toolRequest", mapMsgJson);
+
                 List<Map<String, Object>> response = tool.call(params);
 
                 String actionText;

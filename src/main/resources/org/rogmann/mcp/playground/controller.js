@@ -23,8 +23,16 @@ function $(selector) {
 }
 
 function addMessage(msg) {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+
     var elMessages = $('#messages');
-    elMessages.value =`* ${msg}\n${elMessages.value}`;
+    elMessages.value =`* ${timeString} ${msg}\n${elMessages.value}`;
 }
 
 /**
@@ -137,6 +145,9 @@ function handleMessage(message) {
             else if (action === 'toolRequest') {
                 const toolRequestTextarea = $('#toolRequest');
                 toolRequestTextarea.value = JSON.stringify(data.toolRequest);
+                if (data && data.toolRequest && data.toolRequest.name) {
+                    addMessage("Tool-Call: " + data.toolRequest.name);
+                }
 
                 $('#propertyValue').value = '';
             }
