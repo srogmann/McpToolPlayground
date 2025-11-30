@@ -123,7 +123,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
 
         Path projectBaseDir = Paths.get(projectDirProp).toAbsolutePath().normalize();
         if (!Files.exists(projectBaseDir)) {
-            result.put("error", "Project base directory does not exist: " + projectBaseDir);
+            result.put("error", "Project base directory does not exist.");
             LOGGER.severe("Project base directory does not exist: " + projectBaseDir);
             return List.of(result);
         }
@@ -134,14 +134,14 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
             try {
                 projectFilterPattern = Pattern.compile(projectFilterProp);
             } catch (PatternSyntaxException e) {
-                result.put("error", "Invalid regex in IDE_PROJECT_FILTER: " + e.getMessage());
+                result.put("error", "Invalid regex in IDE_PROJECT_FILTER.");
                 LOGGER.severe("Invalid regex in IDE_PROJECT_FILTER: " + e.getMessage());
                 return List.of(result);
             }
         }
 
         if (projectFilterPattern != null && !projectFilterPattern.matcher(projectName).matches()) {
-            result.put("error", "Project name '" + projectName + "' is not allowed by filter");
+            result.put("error", "Project name '" + projectName + "' is not allowed.");
             LOGGER.warning("Access denied to project '" + projectName + "' due to filter.");
             return List.of(result);
         }
@@ -154,14 +154,14 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
         }
 
         if (!Files.exists(projectDir)) {
-            result.put("error", "Project directory does not exist: " + projectDir);
+            result.put("error", "Project directory does not exist: project " + projectName);
             LOGGER.severe("Project directory does not exist: " + projectDir);
             return List.of(result);
         }
 
         Path targetFile = projectDir.resolve(pathInProject).normalize();
         if (!targetFile.startsWith(projectDir)) {
-            result.put("error", "Path traversal detected in pathInProject: " + pathInProject);
+            result.put("error", "Path traversal detected in pathInProject: " + projectName);
             LOGGER.warning("Path traversal attempt detected: " + pathInProject);
             return List.of(result);
         }
@@ -173,7 +173,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
         }
 
         if (Files.isDirectory(targetFile)) {
-            result.put("error", "Path refers to a directory, not a file: " + targetFile);
+            result.put("error", "Path refers to a directory, not a file: " + projectBaseDir.relativize(targetFile));
             LOGGER.info("Cannot manage methods in a directory: " + targetFile);
             return List.of(result);
         }
@@ -182,7 +182,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
         try {
             lines = Files.readAllLines(targetFile);
         } catch (IOException e) {
-            result.put("error", "Failed to read file: " + e.getMessage());
+            result.put("error", "Failed to read file " + projectBaseDir.relativize(targetFile));
             LOGGER.severe("IOException while reading file " + targetFile + ": " + e.getMessage());
             return List.of(result);
         }
@@ -215,7 +215,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
                     return List.of(result);
             }
         } catch (IllegalArgumentException e) {
-            result.put("error", e.getMessage());
+            result.put("error", "Error while modifying file '" + pathInProject + "': " + e.getMessage());
             LOGGER.warning(e.getMessage());
             return List.of(result);
         }
@@ -223,10 +223,10 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
         try {
             Files.write(targetFile, modifiedLines, StandardOpenOption.TRUNCATE_EXISTING);
             result.put("status", "success");
-            result.put("message", "Successfully performed " + action + " on method '" + methodName + "' in file: " + targetFile);
+            result.put("message", "Successfully performed " + action + " on method '" + methodName + "' in file: " + projectBaseDir.relativize(targetFile));
             LOGGER.info("Successfully performed " + action + " on method '" + methodName + "' in file: " + targetFile);
         } catch (IOException e) {
-            result.put("error", "Failed to write file: " + e.getMessage());
+            result.put("error", "Failed to write file '" + pathInProject);
             LOGGER.severe("IOException while writing file " + targetFile + ": " + e.getMessage());
             throw new UncheckedIOException(e);
         }
@@ -245,7 +245,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param beforeMethod optional method name before which to insert
      * @return modified lines
      */
-    private List<String> addMethod(List<String> lines, String methodName, String methodText,
+    static List<String> addMethod(List<String> lines, String methodName, String methodText,
                                    String afterMethod, String beforeMethod) {
         int insertIndex = -1;
 
@@ -288,7 +288,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param methodText new method text including Javadoc
      * @return modified lines
      */
-    private List<String> replaceMethod(List<String> lines, String methodName, String methodText) {
+    static List<String> replaceMethod(List<String> lines, String methodName, String methodText) {
         int start = findStartOfMethod(lines, methodName);
         if (start == -1) {
             throw new IllegalArgumentException("Method '" + methodName + "' not found for replacement");
@@ -312,7 +312,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param methodName name of method to delete
      * @return modified lines
      */
-    private List<String> deleteMethod(List<String> lines, String methodName) {
+    static List<String> deleteMethod(List<String> lines, String methodName) {
         int start = findStartOfMethod(lines, methodName);
         if (start == -1) {
             throw new IllegalArgumentException("Method '" + methodName + "' not found for deletion");
@@ -335,7 +335,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param methodName method name with optional signature
      * @return index of the first line of the method, or -1 if not found
      */
-    private int findStartOfMethod(List<String> lines, String methodName) {
+    static int findStartOfMethod(List<String> lines, String methodName) {
         String cleanName = stripMethodName(methodName);
         int parenthesesCount = countParametersInSignature(methodName);
 
@@ -360,7 +360,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param methodName method name with optional signature
      * @return index of the closing brace of the method, or -1 if not found
      */
-    private int findEndOfMethod(List<String> lines, String methodName) {
+    static int findEndOfMethod(List<String> lines, String methodName) {
         int start = findStartOfMethod(lines, methodName);
         if (start == -1) {
             return -1;
@@ -397,7 +397,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param lines source lines
      * @return line index for insertion
      */
-    private int findInsertionPointForLastMethod(List<String> lines) {
+    static int findInsertionPointForLastMethod(List<String> lines) {
         // Find last '}' that is not inside a method
         int lastClassBrace = -1;
         int braceCount = 0;
@@ -409,7 +409,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
 
             braceCount += open - close;
 
-            if (braceCount == 1 && close > 0) {
+            if (braceCount == 0 && close > 0) {
                 lastClassBrace = i;
             }
         }
@@ -428,7 +428,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param methodSig method name with optional signature
      * @return method name
      */
-    private String stripMethodName(String methodSig) {
+    static String stripMethodName(String methodSig) {
         int parenIndex = methodSig.indexOf('(');
         if (parenIndex != -1) {
             return methodSig.substring(0, parenIndex).trim();
@@ -442,7 +442,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param methodSig method signature
      * @return number of parameters
      */
-    private int countParametersInSignature(String methodSig) {
+    static int countParametersInSignature(String methodSig) {
         int parenIndex = methodSig.indexOf('(');
         if (parenIndex == -1) {
             return 0;
@@ -462,7 +462,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param line source line
      * @return count of '('
      */
-    private int countOpeningParentheses(String line) {
+    static int countOpeningParentheses(String line) {
         return (int) line.chars().filter(ch -> ch == '(').count();
     }
 
@@ -474,7 +474,7 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
      * @param expectedParams expected number of parameters
      * @return true if likely matches
      */
-    private boolean hasMatchingParameters(String line, String methodName, int expectedParams) {
+    static boolean hasMatchingParameters(String line, String methodName, int expectedParams) {
         if (!line.contains(methodName + "(")) {
             return false;
         }
