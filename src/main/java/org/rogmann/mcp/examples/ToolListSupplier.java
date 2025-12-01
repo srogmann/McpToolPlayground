@@ -13,7 +13,8 @@ public class ToolListSupplier implements McpToolImplementations {
     @Override
     public List<McpToolImplementation> get() {
         return List.of(new CreateNewFileTool(), new ReadTextFileTool(),
-                new ManageJavaMethodsTool(), new FindFilesByGlobTool());
+                new ManageJavaMethodsTool(), new ManageJavaFieldsTool(),
+                new FindFilesByGlobTool());
     }
 
 }
