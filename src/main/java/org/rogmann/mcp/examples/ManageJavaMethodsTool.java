@@ -65,6 +65,10 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
             "string",
             "Optional method name before which the new method should be inserted (for ADD)"
         );
+        McpToolPropertyDescription fieldTextDesc = new McpToolPropertyDescription(
+                "string",
+                "Optional full text of fields to be added including JavaDoc (for ADD only)"
+            );
 
         Map<String, McpToolPropertyDescription> properties = Map.of(
             "projectName", projectNameDesc,
@@ -73,7 +77,8 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
             "method", methodDesc,
             "text", textDesc,
             "afterMethod", afterMethodDesc,
-            "beforeMethod", beforeMethodDesc
+            "beforeMethod", beforeMethodDesc,
+            "fieldText", fieldTextDesc
         );
 
         List<String> requiredFields = List.of("projectName", "pathInProject", "action", "method");
@@ -110,6 +115,8 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
         String methodText = (String) arguments.get("text");
         String afterMethod = (String) arguments.get("afterMethod");
         String beforeMethod = (String) arguments.get("beforeMethod");
+        String fieldText = (String) arguments.get("fieldText");
+        
 
         Map<String, Object> result = new HashMap<>();
         result.put("status", "failed");
@@ -197,6 +204,10 @@ public class ManageJavaMethodsTool implements McpToolImplementation {
                         return List.of(result);
                     }
                     modifiedLines = addMethod(lines, methodName, methodText, afterMethod, beforeMethod);
+                    
+                    if (fieldText != null) {
+                        modifiedLines = ManageJavaFieldsTool.addField(modifiedLines, fieldText, null, null);
+                    }
                     break;
                 case "REPLACE":
                     if (methodText == null || methodText.trim().isEmpty()) {
