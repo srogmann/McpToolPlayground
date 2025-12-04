@@ -3,6 +3,8 @@
 This project provides a collection of **MCP (Model Control Protocol) tools** implemented in Java, along with an interactive web-based simulation environment.
 It is designed for **experimental purposes** and **educational use** — not for production deployment.
 
+<img width="1783" height="950" alt="McpToolPlayground 01" src="https://github.com/user-attachments/assets/4c857089-f5f8-4745-af2b-69e6e3626515" />
+
 ## Features
 
 - **Tool Implementations**:
