@@ -169,7 +169,7 @@ public class ReadTextFileTool implements McpToolImplementation {
             result.put("status", "success");
             result.put("text", content.toString());
             result.put("linesRead", linesRead);
-            result.put("message", "Successfully read from file: " + targetFile);
+            result.put("message", "Successfully read from file: " + projectBaseDir.relativize(targetFile));
             LOGGER.fine("Successfully read " + linesRead + " lines from file: " + targetFile);
         } catch (IOException e) {
             result.put("error", "Failed to read file: " + e.getMessage());
